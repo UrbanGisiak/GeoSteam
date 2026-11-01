@@ -7,6 +7,7 @@ import re
 import shutil
 import sys
 
+import geopandas as gpd
 import pyogrio
 
 # w exe (PyInstaller) pliki obok programu leżą w folderze exe, a nie w folderze rozpakowania
@@ -23,6 +24,7 @@ KATALOG_RAPORTOW = os.path.join(KATALOG_APLIKACJI, "raporty")
 
 DOMYSLNE_USTAWIENIA = {
     "aktywny_scenariusz": None,
+    "format_raportu": "xlsx",
     "harmonogram": {"wlaczony": False, "co_minut": 1440, "ostatnie_uruchomienie": None},
 }
 
@@ -106,26 +108,34 @@ def wczytaj_scenariusz(sciezka):
     return scenariusz
 
 
+def dodaj_zrodlo_do_scenariusza(nazwa, zrodlo):
+    """Dopisuje źródło do zapisanego scenariusza. Odrzuca duplikat (ten sam adres i te same warstwy)."""
+    sciezka = sciezka_scenariusza(nazwa)
+    with open(sciezka, encoding="utf-8") as plik:
+        scenariusz = json.load(plik)
+    if not isinstance(scenariusz, dict) or not isinstance(scenariusz.get("zrodla"), list):
+        raise ValueError("Wybrany plik nie jest scenariuszem GeoSteam.")
+    if any(z["wfs_url"] == zrodlo["wfs_url"] and z["warstwy"] == zrodlo["warstwy"] for z in scenariusz["zrodla"]):
+        raise ValueError("To samo źródło jest już w scenariuszu.")
+    scenariusz["zrodla"].append(zrodlo)
+    with open(sciezka, "w", encoding="utf-8") as plik:
+        json.dump(scenariusz, plik, ensure_ascii=False, indent=2)
+
+
 def _warstwy_w_pliku(plik):
     if not os.path.exists(plik):
         return []
     return [nazwa for nazwa, _typ in pyogrio.list_layers(plik)]
 
 
+def wczytaj_warstwe(plik, warstwa):
+    """Obiekty warstwy z GeoPackage albo None, gdy warstwy jeszcze nie ma."""
+    if warstwa not in _warstwy_w_pliku(plik):
+        return None
+    return gpd.read_file(plik, layer=warstwa)
+
+
 def zapisz_warstwe(plik, warstwa, gdf):
-    """Zastępuje jedną warstwę w GeoPackage, pozostałe warstwy zostają. Zwraca liczbę obiektów przed i po."""
-    stara = None
-    if warstwa in _warstwy_w_pliku(plik):
-        stara = pyogrio.read_info(plik, layer=warstwa)["features"]
+    """Zastępuje jedną warstwę w GeoPackage, pozostałe warstwy zostają."""
     gdf = gdf.assign(data_pobrania=datetime.date.today().isoformat())
     gdf.to_file(plik, layer=warstwa, driver="GPKG")
-    return stara, len(gdf)
-
-
-def zapisz_raport(linie):
-    os.makedirs(KATALOG_RAPORTOW, exist_ok=True)
-    znacznik = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    sciezka = os.path.join(KATALOG_RAPORTOW, f"raport_{znacznik}.txt")
-    with open(sciezka, "w", encoding="utf-8") as plik:
-        plik.write("\n".join(linie) + "\n")
-    return sciezka

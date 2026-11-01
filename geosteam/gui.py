@@ -2,11 +2,13 @@
 import datetime
 import os
 import queue
+import re
 import threading
 import tkinter as tk
+from urllib.parse import urlsplit
 from tkinter import filedialog, messagebox, simpledialog, ttk
 
-from . import aktualizacja, eziudp, harmonogram, magazyn, wfs
+from . import aktualizacja, eziudp, harmonogram, magazyn, raport, wfs
 
 RODZAJE = ["wszystkie", "centralne", "wojewodztwa", "powiaty", "gminy"]
 WSZYSTKIE_TEMATY = "wszystkie"
@@ -50,6 +52,7 @@ class Aplikacja:
         ustawienia = ttk.Frame(karty, padding=6)
         karty.add(pobieranie, text="Pobieranie")
         karty.add(ustawienia, text="Ustawienia")
+        self._sekcja_wlasnego(pobieranie)
         self._sekcja_szukania(pobieranie)
         self._sekcja_uslug(pobieranie)
         self._sekcja_zrodel(pobieranie)
@@ -94,6 +97,28 @@ class Aplikacja:
         ttk.Label(prawa, text="Warstwy usługi (bez zaznaczenia - wszystkie):").pack(anchor="w")
         self.lista_warstw = self._lista(prawa, wysokosc=5, tryb="extended")
         ttk.Button(prawa, text="Dodaj do listy źródeł", command=self._dodaj_zrodlo).pack(anchor="w", pady=4)
+        wiersz_scenariusza = ttk.Frame(prawa)
+        wiersz_scenariusza.pack(anchor="w")
+        ttk.Label(wiersz_scenariusza, text="Scenariusz:").pack(side="left")
+        self.wybor_scen_dodaj = ttk.Combobox(wiersz_scenariusza, state="readonly", width=24)
+        self.wybor_scen_dodaj.pack(side="left", padx=4)
+        ttk.Button(wiersz_scenariusza, text="Dodaj do scenariusza", command=self._dodaj_do_scenariusza).pack(side="left")
+
+    def _sekcja_wlasnego(self, rodzic):
+        ramka = ttk.LabelFrame(rodzic, text="0. Własny WFS - adres usługi spoza katalogu EZiUDP", padding=6)
+        ramka.pack(fill="x", pady=(0, 6))
+        self.adres_wlasny = tk.StringVar()
+        self.nazwa_wlasna = tk.StringVar()
+        wiersz = ttk.Frame(ramka)
+        wiersz.pack(fill="x")
+        ttk.Label(wiersz, text="Adres WFS:").pack(side="left")
+        ttk.Entry(wiersz, textvariable=self.adres_wlasny, width=70).pack(side="left", padx=4)
+        ttk.Button(wiersz, text="Sprawdź usługę", command=self._sprawdz_wlasny_wfs).pack(side="left")
+        wiersz_nazwy = ttk.Frame(ramka)
+        wiersz_nazwy.pack(fill="x", pady=(4, 0))
+        ttk.Label(wiersz_nazwy, text="Nazwa źródła:").pack(side="left")
+        ttk.Entry(wiersz_nazwy, textvariable=self.nazwa_wlasna, width=50).pack(side="left", padx=4)
+        ttk.Label(wiersz_nazwy, text="(po sprawdzeniu usługi warstwy pojawią się w sekcji 2)").pack(side="left")
 
     def _sekcja_zrodel(self, rodzic):
         ramka = ttk.LabelFrame(rodzic, text="3. Źródła i aktualizacja", padding=6)
@@ -127,6 +152,19 @@ class Aplikacja:
         self.etykieta_scenariusza = ttk.Label(scenariusze, text="")
         self.etykieta_scenariusza.pack(anchor="w", pady=(6, 0))
         ttk.Button(scenariusze, text="Zmień folder danych...", command=self._zmien_folder).pack(anchor="w", pady=(6, 0))
+
+        raporty = ttk.LabelFrame(rodzic, text="Raporty z pobierania", padding=6)
+        raporty.pack(fill="x", pady=(0, 8))
+        wiersz_raportow = ttk.Frame(raporty)
+        wiersz_raportow.pack(fill="x")
+        ttk.Label(wiersz_raportow, text="Format:").pack(side="left")
+        self.wybor_formatu = ttk.Combobox(wiersz_raportow, values=list(raport.FORMATY), state="readonly", width=14)
+        self.wybor_formatu.pack(side="left", padx=4)
+        self.wybor_formatu.bind("<<ComboboxSelected>>", self._zapisz_format_raportu)
+        ttk.Button(wiersz_raportow, text="Otwórz folder raportów", command=self._otworz_raporty).pack(side="left", padx=8)
+        ttk.Label(
+            raporty, text="Raport: obiekty bez zmian, dodane i usunięte w każdej warstwie. W xlsx arkusz Zmiany ma szczegóły."
+        ).pack(anchor="w", pady=(4, 0))
 
         harm = ttk.LabelFrame(rodzic, text="Cykliczne pobieranie i aktualizacja", padding=6)
         harm.pack(fill="x")
@@ -289,27 +327,78 @@ class Aplikacja:
         for nazwa, tytul in self.warstwy_wfs:
             self.lista_warstw.insert("end", f"{nazwa}  ({tytul})")
 
-    def _dodaj_zrodlo(self):
-        if self.wybrany_zbior is None or self.adres_wfs is None:
-            messagebox.showinfo("Dodawanie", "Wybierz zbiór i usługę WFS, potem kliknij 'Pokaż warstwy WFS'.")
+    def _sprawdz_wlasny_wfs(self):
+        adres = eziudp.oczysc_adres(self.adres_wlasny.get().strip())
+        if not adres:
+            messagebox.showinfo("Własny WFS", "Wpisz adres usługi WFS.")
             return
+        self._uruchom(
+            lambda: wfs.pobierz_capabilities(adres, self._log_z_watku),
+            lambda wynik: self._pokaz_wlasny_wfs(adres, wynik),
+        )
+
+    def _pokaz_wlasny_wfs(self, adres, wynik):
+        wersja, warstwy = wynik
+        if not warstwy:
+            messagebox.showinfo("Własny WFS", "Usługa odpowiada, ale nie zgłasza żadnych warstw.")
+            return
+        self.wybrany_zbior = None  # źródło pochodzi z adresu, nie z katalogu EZiUDP
+        self.uslugi = [{"adres": adres, "wersja": wersja, "warstwy": warstwy}]
+        self.lista_uslug.delete(0, "end")
+        self.lista_uslug.insert("end", f"{adres}  [{len(warstwy)} warstw, WFS {wersja}]")
+        self.lista_uslug.selection_set(0)
+        self._wybrano_usluge(None)
+        if not self.nazwa_wlasna.get().strip():
+            self.nazwa_wlasna.set(urlsplit(adres).netloc)
+        self._dopisz(f"Własny WFS: {adres} ({len(warstwy)} warstw, WFS {wersja})")
+
+    def _zbuduj_zrodlo(self):
+        if self.adres_wfs is None:
+            messagebox.showinfo("Dodawanie", "Wybierz usługę WFS z listy albo sprawdź własny adres.")
+            return None
         warstwy = [self.warstwy_wfs[i][0] for i in self.lista_warstw.curselection()]
         if not warstwy and not messagebox.askyesno("Dodawanie", "Nie zaznaczono warstw. Dodać wszystkie warstwy usługi?"):
-            return
-        if any(z["wfs_url"] == self.adres_wfs and z["warstwy"] == warstwy for z in self.konfiguracja["zrodla"]):
-            messagebox.showinfo("Dodawanie", "To samo źródło jest już na liście.")
-            return
-        zrodlo = {
-            "nazwa": self.wybrany_zbior["zbior"],
+            return None
+        if self.wybrany_zbior is not None:
+            nazwa = self.wybrany_zbior["zbior"]
+            plik = self.wybrany_zbior["idiip"].replace(".", "_") + ".gpkg"
+        else:
+            nazwa = self.nazwa_wlasna.get().strip() or self.adres_wfs
+            plik = re.sub(r"[^\w\-]+", "_", nazwa).strip("_")[:80] + ".gpkg"
+        return {
+            "nazwa": nazwa,
             "wfs_url": self.adres_wfs,
-            "plik": self.wybrany_zbior["idiip"].replace(".", "_") + ".gpkg",
+            "plik": plik,
             "warstwy": warstwy,
             "ostatnia_aktualizacja": None,
         }
+
+    def _dodaj_zrodlo(self):
+        zrodlo = self._zbuduj_zrodlo()
+        if zrodlo is None:
+            return
+        if any(z["wfs_url"] == zrodlo["wfs_url"] and z["warstwy"] == zrodlo["warstwy"] for z in self.konfiguracja["zrodla"]):
+            messagebox.showinfo("Dodawanie", "To samo źródło jest już na liście.")
+            return
         self.konfiguracja["zrodla"].append(zrodlo)
         magazyn.zapisz_konfiguracje(self.konfiguracja)
         self._odswiez_zrodla()
-        self._dopisz(f"Dodano źródło: {zrodlo['nazwa']} ({len(warstwy) or 'wszystkie'} warstw)")
+        self._dopisz(f"Dodano źródło: {zrodlo['nazwa']} ({len(zrodlo['warstwy']) or 'wszystkie'} warstw)")
+
+    def _dodaj_do_scenariusza(self):
+        nazwa_scenariusza = self.wybor_scen_dodaj.get()
+        if not nazwa_scenariusza:
+            messagebox.showinfo("Dodawanie", "Wybierz scenariusz z listy (zakładka Ustawienia).")
+            return
+        zrodlo = self._zbuduj_zrodlo()
+        if zrodlo is None:
+            return
+        try:
+            magazyn.dodaj_zrodlo_do_scenariusza(nazwa_scenariusza, zrodlo)
+        except (OSError, ValueError) as blad:
+            messagebox.showerror("Dodawanie", str(blad))
+            return
+        self._dopisz(f"Dodano źródło {zrodlo['nazwa']} do scenariusza {nazwa_scenariusza}")
 
     # --- źródła i aktualizacja ---
 
@@ -343,15 +432,25 @@ class Aplikacja:
         if not zrodla:
             messagebox.showinfo("Aktualizacja", "Lista źródeł jest pusta.")
             return
+        formaty = raport.FORMATY[self.ustawienia["format_raportu"]]
         self._uruchom(
-            lambda: aktualizacja.aktualizuj(self.konfiguracja, zrodla, self._log_z_watku),
-            lambda raport: self._zakoncz_aktualizacje(raport),
+            lambda: aktualizacja.aktualizuj(self.konfiguracja, zrodla, self._log_z_watku, formaty),
+            lambda _sciezki: self._zakoncz_aktualizacje(),
         )
 
-    def _zakoncz_aktualizacje(self, sciezka_raportu):
+    def _zakoncz_aktualizacje(self):
         self._odswiez_zrodla()
         self._odswiez_harmonogram_etykiete()
-        self._dopisz(f"Gotowe. Raport: {sciezka_raportu}")
+        self._dopisz("Gotowe.")
+
+    def _zapisz_format_raportu(self, _zdarzenie):
+        self.ustawienia["format_raportu"] = self.wybor_formatu.get()
+        magazyn.zapisz_ustawienia(self.ustawienia)
+        self._dopisz(f"Format raportów: {self.ustawienia['format_raportu']}")
+
+    def _otworz_raporty(self):
+        os.makedirs(magazyn.KATALOG_RAPORTOW, exist_ok=True)
+        os.startfile(magazyn.KATALOG_RAPORTOW)  # aplikacja jest przeznaczona dla Windows
 
     def _usun_zrodlo(self):
         zaznaczone = self.tabela_zrodel.selection()
@@ -383,10 +482,12 @@ class Aplikacja:
     def _odswiez_ustawienia(self):
         nazwy = magazyn.lista_scenariuszy()
         self.wybor_scenariusza.configure(values=nazwy)
+        self.wybor_scen_dodaj.configure(values=nazwy)
         aktywny = self.ustawienia["aktywny_scenariusz"]
         if aktywny in nazwy:
             self.wybor_scenariusza.set(aktywny)
         self.etykieta_scenariusza.configure(text=f"Aktywny scenariusz: {aktywny or 'brak (lista z zrodla.json)'}")
+        self.wybor_formatu.set(self.ustawienia["format_raportu"])
         h = self.ustawienia["harmonogram"]
         self.harm_wlaczony.set(h["wlaczony"])
         czeste = h["co_minut"] < 60
