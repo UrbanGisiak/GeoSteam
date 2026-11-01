@@ -1,0 +1,186 @@
+{
+  "folder_danych": "dane",
+  "nazwy_warstw": {
+    "ms:A00_Granice_panstwa": "A00_Granice_panstwa",
+    "ms:A01_Granice_wojewodztw": "A01_Granice_wojewodztw",
+    "ms:A02_Granice_powiatow": "A02_Granice_powiatow",
+    "ms:A03_Granice_gmin": "A03_Granice_gmin",
+    "ms:A04_Granice_miast": "A04_Granice_miast",
+    "ms:A05_Granice_jednostek_ewidencyjnych": "A05_Granice_jednostek_ewidencyjnych",
+    "ms:A06_Granice_obrebow_ewidencyjnych": "A06_Granice_obrebow_ewidencyjnych",
+    "SIPAM:a_view_coastal_zone_border_ochr": "Pas ochronny",
+    "SIPAM:a_view_coastal_zone_border_tech": "Pas techniczny",
+    "SIPAM:a_view_maritime_office_border": "Granice UM",
+    "SIPAM:a_view_coastline": "Linia brzegu",
+    "SIPAM:a_view_baseline": "Linia podstawowa",
+    "SIPAM:a_view_maritime_office_zone": "Obszar UM",
+    "SIPAM:a_view_port": "Porty morskie",
+    "SIPAM:a_view_marina": "Przystanie morskie",
+    "GDOS:ParkiNarodowe": "ParkiNarodowe",
+    "GDOS:Rezerwaty": "Rezerwaty",
+    "GDOS:ParkiKrajobrazowe": "ParkiKrajobrazowe",
+    "GDOS:ObszaryChronionegoKrajobrazu": "ObszaryChronionegoKrajobrazu",
+    "GDOS:SpecjalneObszaryOchrony": "SpecjalneObszaryOchrony",
+    "GDOS:ObszarySpecjalnejOchrony": "ObszarySpecjalnejOchrony",
+    "GDOS:PomnikiPrzyrodyPunktowe": "PomnikiPrzyrodyPunktowe",
+    "GDOS:PomnikiPrzyrodyPowierzchniowe": "PomnikiPrzyrodyPowierzchniowe",
+    "GDOS:StanowiskaDokumentacyjne": "StanowiskaDokumentacyjne",
+    "GDOS:UzytkiEkologiczne": "UzytkiEkologiczne",
+    "GDOS:ZespolyPrzyrodniczoKrajobrazowe": "ZespolyPrzyrodniczoKrajobrazowe",
+    "GDOS:korytarzeEkologiczne": "KorytarzeEkologiczne",
+    "GDOS:Mezoregiony": "Mezoregiony",
+    "GDOS:ramsar": "Obszary wodno-błotne (ramsar)",
+    "GDOS:ElektrownieWiatrowe": "ElektrownieWiatrowe_GDOŚ",
+    "GDOS:N2kKonsultowanePtasiePowiekszenie": "N2kKonsultowanePtasiePowiekszenie",
+    "GDOS:N2kKonsultowanePtasieZmniejszenie": "N2kKonsultowanePtasieZmniejszenie",
+    "GDOS:N2kProponowanePtasiePowiekszenie": "N2kProponowanePtasiePowiekszenie",
+    "GDOS:N2kProponowanePtasieZmniejszenie": "N2kProponowanePtasieZmniejszenie",
+    "GDOS:N2kKonsultowaneSiedliskowePowiekszenie": "N2kKonsultowaneSiedliskowePowiekszenie",
+    "GDOS:N2kKonsultowaneSiedliskoweZmniejszenie": "N2kKonsultowaneSiedliskoweZmniejszenie",
+    "GDOS:N2kProponowaneSiedliskowePowiekszenie": "N2kProponowaneSiedliskowePowiekszenie",
+    "GDOS:N2kProponowaneSiedliskoweZmniejszenie": "N2kProponowaneSiedliskoweZmniejszenie",
+    "midas:MIDAS_-_udokumentowane_złoża_kopalin": "Złoża kopalin",
+    "midas:MIDAS_-_obszary_górnicze": "Obszary górnicze",
+    "midas:MIDAS_-_tereny_górnicze": "Tereny górnicze",
+    "gmgml:GZWP_udokumentowane": "Główne_zbiorniki_wód_podziemnych_udokumentowane",
+    "gmgml:GZWP_nieudokumentowane": "Główne_zbiorniki_wód_podziemnych_nieudokumentowane",
+    "gmgml:LZWP": "LZWP",
+    "gmgml:World_Heritage_Properties_List": "Unesco",
+    "gmgml:Monuments_of_History": "Pomniki historii",
+    "ms:U06_Nadlesnictwo": "U06_Nadlesnictwo",
+    "ms:U07_Regionalna_dyrekcja_lasow_panstwowych": "U07_Regionalna_dyrekcja_lasow_panstwowych",
+    "ms:U08_Zarzad_zlewni_PGWWP": "U08_Zarzad_zlewni_PGWWP",
+    "ms:U09_Regionalny_zarzad_gospodarki_wodnej_PGWWP": "U09_Regionalny_zarzad_gospodarki_wodnej_PGWWP",
+    "ms:U10_Urzad_morski": "U10_Urzad_morski",
+    "ms:U11_Urzad_zeglugi_srodladowej": "U11_Urzad_zeglugi_srodladowej",
+    "ms:K08_Oddzial_strazy_granicznej": "K08_Oddzial_strazy_granicznej",
+    "granice_lotnisk": "Granice_lotniska",
+    "ladowiska": "Ladowiska",
+    "ols_okregi": "OLS_okregi",
+    "powierzchnie_ograniczajace_OLS": "Powierzchnie_ograniczajace_OLS"
+  },
+  "zrodla": [
+    {
+      "nazwa": "PRG - granice administracyjne (GUGiK)",
+      "wfs_url": "https://mapy.geoportal.gov.pl/wss/service/PZGIK/PRG/WFS/AdministrativeBoundaries",
+      "plik": "PRG.gpkg",
+      "warstwy": [
+        "ms:A00_Granice_panstwa",
+        "ms:A01_Granice_wojewodztw",
+        "ms:A02_Granice_powiatow",
+        "ms:A03_Granice_gmin",
+        "ms:A04_Granice_miast",
+        "ms:A05_Granice_jednostek_ewidencyjnych",
+        "ms:A06_Granice_obrebow_ewidencyjnych"
+      ],
+      "ostatnia_aktualizacja": null
+    },
+    {
+      "nazwa": "SIPAM - granice morskie, porty i przystanie",
+      "wfs_url": "https://ogc.sipam.gov.pl/geoserver/SIPAM/wfs",
+      "plik": "SIPAM.gpkg",
+      "warstwy": [
+        "SIPAM:a_view_coastal_zone_border_ochr",
+        "SIPAM:a_view_coastal_zone_border_tech",
+        "SIPAM:a_view_maritime_office_border",
+        "SIPAM:a_view_coastline",
+        "SIPAM:a_view_baseline",
+        "SIPAM:a_view_maritime_office_zone",
+        "SIPAM:a_view_port"
+      ],
+      "ostatnia_aktualizacja": null
+    },
+    {
+      "nazwa": "MIDAS - złoża kopalin i obszary górnicze (PIG-PIB)",
+      "wfs_url": "https://cbdgmapa.pgi.gov.pl/arcgis/services/midas/MapServer/WFSServer",
+      "plik": "MIDAS.gpkg",
+      "warstwy": [
+        "midas:MIDAS_-_udokumentowane_złoża_kopalin",
+        "midas:MIDAS_-_obszary_górnicze",
+        "midas:MIDAS_-_tereny_górnicze"
+      ],
+      "ostatnia_aktualizacja": null
+    },
+    {
+      "nazwa": "GDOŚ - formy ochrony przyrody",
+      "wfs_url": "http://sdi.gdos.gov.pl/wfs",
+      "plik": "FOP.gpkg",
+      "warstwy": [
+        "GDOS:ParkiNarodowe",
+        "GDOS:Rezerwaty",
+        "GDOS:ParkiKrajobrazowe",
+        "GDOS:ObszaryChronionegoKrajobrazu",
+        "GDOS:SpecjalneObszaryOchrony",
+        "GDOS:ObszarySpecjalnejOchrony",
+        "GDOS:PomnikiPrzyrodyPunktowe",
+        "GDOS:PomnikiPrzyrodyPowierzchniowe",
+        "GDOS:StanowiskaDokumentacyjne",
+        "GDOS:UzytkiEkologiczne",
+        "GDOS:ZespolyPrzyrodniczoKrajobrazowe"
+      ],
+      "ostatnia_aktualizacja": null
+    },
+    {
+      "nazwa": "GDOŚ - pozostałe obszary (Natura 2000, korytarze, ramsar)",
+      "wfs_url": "http://sdi.gdos.gov.pl/wfs",
+      "plik": "INNE_GDOS.gpkg",
+      "warstwy": [
+        "GDOS:korytarzeEkologiczne",
+        "GDOS:Mezoregiony",
+        "GDOS:ramsar",
+        "GDOS:ElektrownieWiatrowe",
+        "GDOS:N2kKonsultowanePtasiePowiekszenie",
+        "GDOS:N2kKonsultowanePtasieZmniejszenie",
+        "GDOS:N2kProponowanePtasiePowiekszenie",
+        "GDOS:N2kProponowanePtasieZmniejszenie",
+        "GDOS:N2kKonsultowaneSiedliskowePowiekszenie",
+        "GDOS:N2kKonsultowaneSiedliskoweZmniejszenie",
+        "GDOS:N2kProponowaneSiedliskowePowiekszenie",
+        "GDOS:N2kProponowaneSiedliskoweZmniejszenie"
+      ],
+      "ostatnia_aktualizacja": null
+    },
+    {
+      "nazwa": "Zabytki - pomniki historii i Światowe Dziedzictwo UNESCO",
+      "wfs_url": "https://usluga.zabytek.gov.pl/INSPIRE_WFS_MHD/service.svc/get",
+      "plik": "ZABYTKI.gpkg",
+      "warstwy": [
+        "gmgml:Monuments_of_History"
+      ],
+      "ostatnia_aktualizacja": null
+    },
+    {
+      "nazwa": "Zabytki - pomniki historii i Światowe Dziedzictwo UNESCO",
+      "wfs_url": "https://usluga.zabytek.gov.pl/INSPIRE_WFS_WHD/service.svc/get",
+      "plik": "ZABYTKI.gpkg",
+      "warstwy": [
+        "gmgml:World_Heritage_Properties_List"
+      ],
+      "ostatnia_aktualizacja": null
+    },
+    {
+      "nazwa": "GZWP - główne zbiorniki wód podziemnych",
+      "wfs_url": "https://cbdgmapa.pgi.gov.pl/arcgis/services/hydrogeologia/gzwp/MapServer/WFSServer",
+      "plik": "GZWP.gpkg",
+      "warstwy": [
+        "gmgml:GZWP_udokumentowane"
+      ],
+      "ostatnia_aktualizacja": null
+    },
+    {
+      "nazwa": "PRG - granice instytucji (lasy, zlewnie, urzędy morskie)",
+      "wfs_url": "https://mapy.geoportal.gov.pl/wss/service/PZGIK/PRG/WFS/AdministrativeBoundaries",
+      "plik": "GRANICE_INSTYTUCJI.gpkg",
+      "warstwy": [
+        "ms:U06_Nadlesnictwo",
+        "ms:U07_Regionalna_dyrekcja_lasow_panstwowych",
+        "ms:U08_Zarzad_zlewni_PGWWP",
+        "ms:U09_Regionalny_zarzad_gospodarki_wodnej_PGWWP",
+        "ms:U10_Urzad_morski",
+        "ms:U11_Urzad_zeglugi_srodladowej",
+        "ms:K08_Oddzial_strazy_granicznej"
+      ],
+      "ostatnia_aktualizacja": null
+    }
+  ]
+}
