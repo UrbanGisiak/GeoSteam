@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.pyc
+
+# Środowiska i wyniki budowy exe
+.venv/
+.venv-build/
+build/
+dist/
+*.spec
+
+# Dane i raporty tworzone przez program
+dane/
+raporty/

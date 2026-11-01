@@ -1,0 +1,74 @@
+name: Build Windows exe
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Instalacja bibliotek i PyInstaller
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt pyinstaller
+
+      - name: Budowanie Pobieracz.exe
+        run: >
+          python -m PyInstaller --noconfirm --clean --onefile --windowed --name Pobieracz
+          --add-data "zrodla.json;." --collect-all pyogrio --collect-all pyproj
+          --hidden-import pobieracz.gui pobieracz_start.py
+
+      - name: Test dymny exe (aktualizacja jednej warstwy PRG)
+        shell: pwsh
+        timeout-minutes: 20
+        run: |
+          $test = Join-Path $env:RUNNER_TEMP "pobieracz-test"
+          New-Item -ItemType Directory -Force -Path $test | Out-Null
+          Copy-Item dist\Pobieracz.exe $test
+
+          @'
+          {
+            "folder_danych": "dane",
+            "nazwy_warstw": {},
+            "zrodla": [
+              {
+                "nazwa": "PRG test",
+                "wfs_url": "https://mapy.geoportal.gov.pl/wss/service/PZGIK/PRG/WFS/AdministrativeBoundaries",
+                "plik": "PRG_test.gpkg",
+                "warstwy": ["ms:A01_Granice_wojewodztw"],
+                "ostatnia_aktualizacja": null
+              }
+            ]
+          }
+          '@ | Set-Content -Path (Join-Path $test "zrodla.json") -Encoding utf8NoBOM
+
+          $proces = Start-Process -FilePath (Join-Path $test "Pobieracz.exe") -ArgumentList "--aktualizuj" `
+            -WorkingDirectory $test -Wait -PassThru
+          if ($proces.ExitCode -ne 0) { throw "Pobieracz.exe zakonczyl sie kodem $($proces.ExitCode)" }
+
+          $gpkg = Join-Path $test "dane\PRG_test.gpkg"
+          if (-not (Test-Path $gpkg)) { throw "Brak pliku GeoPackage: $gpkg" }
+
+          python -c "import sys, pyogrio; i = pyogrio.read_info(sys.argv[1], layer='A01_Granice_wojewodztw'); assert i['features'] == 16, i['features']; assert str(i['crs']) == 'EPSG:2180', i['crs']; print('OK', i['features'], i['crs'])" $gpkg
+          if ($LASTEXITCODE -ne 0) { throw "Sprawdzenie GeoPackage nie powiodlo sie" }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Pobieracz-windows
+          path: dist/Pobieracz.exe
+          if-no-files-found: error
