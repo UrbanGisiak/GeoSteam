@@ -44,8 +44,20 @@ class Aplikacja:
     # --- budowa okna ---
 
     def _zbuduj(self):
-        glowna = ttk.Frame(self.okno, padding=8)
-        glowna.pack(fill="both", expand=True)
+        # cały panel w przewijanym płótnie, żeby na małym ekranie (np. w VM) było widać dół okna
+        plotno = tk.Canvas(self.okno, highlightthickness=0)
+        suwak = ttk.Scrollbar(self.okno, orient="vertical", command=plotno.yview)
+        plotno.configure(yscrollcommand=suwak.set)
+        suwak.pack(side="right", fill="y")
+        plotno.pack(side="left", fill="both", expand=True)
+        glowna = ttk.Frame(plotno, padding=8)
+        okno_w_plotnie = plotno.create_window((0, 0), window=glowna, anchor="nw")
+        glowna.bind("<Configure>", lambda _e: plotno.configure(scrollregion=plotno.bbox("all")))
+        plotno.bind("<Configure>", lambda e: plotno.itemconfigure(okno_w_plotnie, width=e.width))
+        self.plotno = plotno
+        self.okno.bind_all("<MouseWheel>", self._przewin_kolkiem)
+        self.okno.bind_all("<Button-4>", self._przewin_kolkiem)
+        self.okno.bind_all("<Button-5>", self._przewin_kolkiem)
         karty = ttk.Notebook(glowna)
         karty.pack(fill="both", expand=True)
         pobieranie = ttk.Frame(karty, padding=6)
@@ -58,6 +70,19 @@ class Aplikacja:
         self._sekcja_zrodel(pobieranie)
         self._karta_ustawien(ustawienia)
         self._sekcja_dziennika(glowna)
+
+    def _przewin_kolkiem(self, zdarzenie):
+        # listy i tabele przewijają się same, więc kółko przewija cały panel tylko poza nimi
+        pod_kursorem = self.okno.winfo_containing(zdarzenie.x_root, zdarzenie.y_root)
+        if isinstance(pod_kursorem, (ttk.Treeview, tk.Listbox, tk.Text)):
+            return
+        if zdarzenie.num == 4:
+            kierunek = -1
+        elif zdarzenie.num == 5:
+            kierunek = 1
+        else:
+            kierunek = -1 if zdarzenie.delta > 0 else 1
+        self.plotno.yview_scroll(kierunek, "units")
 
     def _sekcja_szukania(self, rodzic):
         ramka = ttk.LabelFrame(rodzic, text="1. Wyszukaj zbiór w katalogu EZiUDP", padding=6)
