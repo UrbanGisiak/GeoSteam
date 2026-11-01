@@ -22,7 +22,7 @@ if errorlevel 1 (
 echo Budowanie GeoSteam (kilka minut) ...
 ".venv-build\Scripts\python.exe" -m PyInstaller --noconfirm --clean --onedir --windowed --name GeoSteam ^
     --add-data "zrodla.json;." --collect-all pyogrio --collect-all pyproj ^
-    --hidden-import pobieracz.gui pobieracz_start.py
+    --hidden-import geosteam.gui geosteam_start.py
 if errorlevel 1 (
     echo Budowanie nie powiodlo sie. Sprawdz komunikaty powyzej.
     pause

@@ -19,4 +19,4 @@ if errorlevel 1 (
     exit /b 1
 )
 
-start "" ".venv\Scripts\pythonw.exe" -m pobieracz
+start "" ".venv\Scripts\pythonw.exe" -m geosteam

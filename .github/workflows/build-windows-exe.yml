@@ -31,7 +31,7 @@ jobs:
         run: >
           python -m PyInstaller --noconfirm --clean --onedir --windowed --name GeoSteam
           --add-data "zrodla.json;." --collect-all pyogrio --collect-all pyproj
-          --hidden-import pobieracz.gui pobieracz_start.py
+          --hidden-import geosteam.gui geosteam_start.py
 
       - name: Test dymny (aktualizacja jednej warstwy PRG)
         shell: pwsh

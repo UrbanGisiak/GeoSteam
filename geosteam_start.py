@@ -1,4 +1,4 @@
-"""Punkt wejścia dla PyInstaller (plik Pobieracz.exe). Zwykłe uruchomienie: python -m pobieracz."""
+"""Punkt wejścia dla PyInstaller (plik GeoSteam.exe). Zwykłe uruchomienie: python -m geosteam."""
 import os
 import sys
 import traceback
@@ -12,12 +12,12 @@ def _zglos_blad(tresc):
     if sys.platform == "win32":
         import ctypes
 
-        ctypes.windll.user32.MessageBoxW(None, f"Blad uruchomienia. Szczegoly w pliku:\n{sciezka}", "Pobieracz", 0x10)
+        ctypes.windll.user32.MessageBoxW(None, f"Blad uruchomienia. Szczegoly w pliku:\n{sciezka}", "GeoSteam", 0x10)
 
 
 if __name__ == "__main__":
     try:
-        from pobieracz.__main__ import main
+        from geosteam.__main__ import main
 
         main()
     except BaseException:
@@ -26,3 +26,4 @@ if __name__ == "__main__":
         if sys.stderr:
             traceback.print_exc()
         _zglos_blad(traceback.format_exc())
+        sys.exit(1)  # Harmonogram zadań Windows ma widzieć błąd

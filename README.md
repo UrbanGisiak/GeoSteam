@@ -1,4 +1,4 @@
-# Pobieracz danych GIS (EZiUDP / WFS)
+# GeoSteam - pobieranie danych GIS (EZiUDP / WFS)
 
 Prosta aplikacja do pobierania i aktualizacji warstw GIS z usług WFS wskazanych w katalogu
 EZiUDP (GUGiK). Warstwy zapisywane są w plikach GeoPackage (`.gpkg`).
@@ -40,15 +40,25 @@ Zaznacz potrzebne warstwy (bez zaznaczenia zostaną pobrane wszystkie) i kliknij
 jest zastępowana nową wersją, a pozostałe warstwy w tym pliku zostają. Po każdej aktualizacji
 w folderze `raporty` zapisywany jest raport z liczbą obiektów przed i po.
 
-Lista źródeł jest w pliku `zrodla.json`. Folder danych zmienisz przyciskiem *Zmień folder danych*
-(np. na folder w OneDrive).
+Lista źródeł jest w pliku `zrodla.json`.
+
+## Ustawienia
+
+Zakładka **Ustawienia** służy do dwóch rzeczy:
+
+- **Scenariusze** - zestaw źródeł i folder, do którego zapisywane są pliki. Scenariusze są w folderze `scenariusze\`
+  (pliki `.json`). *Wczytaj wybrany* zastępuje bieżącą listę źródeł i folder danych, a *Zapisz bieżący jako scenariusz*
+  zachowuje obecną konfigurację. Folder danych zmienisz przyciskiem *Zmień folder danych* (np. na folder w OneDrive).
+- **Cykliczne pobieranie i aktualizacja** - po włączeniu GeoSteam aktualizuje wszystkie źródła co zadaną liczbę godzin.
+  Działa tylko, gdy program jest uruchomiony. Pierwsza automatyczna aktualizacja jest po pełnym odstępie od włączenia.
+  Do aktualizacji bez okna użyj Harmonogramu zadań Windows (patrz niżej).
 
 ## Aktualizacja bez okna
 
 `aktualizuj.bat` aktualizuje wszystkie źródła i wypisuje postęp w konsoli.
 Do automatycznej aktualizacji (np. w Harmonogramie zadań Windows) użyj polecenia:
 
-    .venv\Scripts\python.exe -m pobieracz --aktualizuj
+    .venv\Scripts\python.exe -m geosteam --aktualizuj
 
 uruchamianego z tego folderu.
 
@@ -62,7 +72,7 @@ uruchamianego z tego folderu.
 
 ## Pliki
 
-- `pobieracz/` - kod aplikacji
+- `geosteam/` - kod aplikacji
 - `zrodla.json` - lista źródeł, folder danych i nazwy warstw
 - `requirements.txt` - biblioteki (geopandas, pyogrio, requests)
 - `uruchom.bat` / `aktualizuj.bat` - uruchomienie na Windows

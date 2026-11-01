@@ -7,5 +7,5 @@ if not exist ".venv\Scripts\python.exe" (
     exit /b 1
 )
 
-".venv\Scripts\python.exe" -m pobieracz --aktualizuj
+".venv\Scripts\python.exe" -m geosteam --aktualizuj
 pause
