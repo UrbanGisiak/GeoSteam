@@ -31,21 +31,21 @@ def _adres_bazowy(adres):
     return urllib.parse.urlsplit(adres)._replace(query="").geturl()
 
 
-def _pobierz(adres, parametry, log):
+def _pobierz(adres, parametry, log, timeout=(30, 600)):
     try:
-        odpowiedz = requests.get(adres, params=parametry, timeout=(30, 600))
+        odpowiedz = requests.get(adres, params=parametry, timeout=timeout)
     except requests.exceptions.SSLError:
         # część serwerów ma niepełne łańcuchy certyfikatów, dlatego ponawiamy bez weryfikacji
         log(f"[UWAGA] Błąd certyfikatu SSL, ponawiam bez weryfikacji: {adres}")
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-        odpowiedz = requests.get(adres, params=parametry, timeout=(30, 600), verify=False)
+        odpowiedz = requests.get(adres, params=parametry, timeout=timeout, verify=False)
     odpowiedz.raise_for_status()
     return odpowiedz.content
 
 
-def pobierz_capabilities(adres, log=print):
+def pobierz_capabilities(adres, log=print, timeout=(30, 600)):
     """Zwraca wersję usługi WFS i listę (nazwa, tytuł) jej warstw."""
-    tresc = _pobierz(_adres_bazowy(adres), {"service": "WFS", "request": "GetCapabilities"}, log)
+    tresc = _pobierz(_adres_bazowy(adres), {"service": "WFS", "request": "GetCapabilities"}, log, timeout)
     korzen = ET.fromstring(tresc)
     if _nazwa(korzen.tag) != "WFS_Capabilities":
         raise ValueError("Adres nie zwraca dokumentu WFS (GetCapabilities)")
@@ -57,6 +57,20 @@ def pobierz_capabilities(adres, log=print):
             if nazwa:
                 warstwy.append((nazwa, _tekst_dziecka(element, "Title") or nazwa))
     return wersja, warstwy
+
+
+def dostepne_uslugi(adresy, log=print):
+    """Z podanych adresów zostawia tylko usługi WFS, które zgłaszają co najmniej jedną warstwę."""
+    uslugi = []
+    for adres in adresy:
+        try:
+            wersja, warstwy = pobierz_capabilities(adres, log, timeout=(15, 60))
+        except Exception as blad:  # nie-WFS, błąd sieci albo HTML zamiast XML
+            log(f"[INFO] Pomijam {adres}: {type(blad).__name__} {str(blad)[:120]}")
+            continue
+        if warstwy:
+            uslugi.append({"adres": adres, "wersja": wersja, "warstwy": warstwy})
+    return uslugi
 
 
 def _parametry_getfeature(nazwa, wersja, start, limit):

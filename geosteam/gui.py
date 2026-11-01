@@ -9,6 +9,8 @@ from tkinter import filedialog, messagebox, simpledialog, ttk
 from . import aktualizacja, eziudp, harmonogram, magazyn, wfs
 
 RODZAJE = ["wszystkie", "centralne", "wojewodztwa", "powiaty", "gminy"]
+WSZYSTKIE_TEMATY = "wszystkie"
+ETYKIETY_TEMATOW = {f"{kod} {nazwa}": kod for kod, nazwa in eziudp.TEMATY}
 CO_MINUTE_SPRAWDZAJ_HARMONOGRAM = 60_000
 
 
@@ -25,9 +27,9 @@ class Aplikacja:
         self.zajete = False
         self.zbiory = []  # wyniki wyszukiwania w EZiUDP
         self.wybrany_zbior = None
-        self.uslugi = []  # adresy usług pobierania wybranego zbioru
-        self.warstwy_wfs = []  # (nazwa, tytuł) warstw załadowanych z usługi
-        self.adres_wfs = None  # usługa, z której załadowano warstwy
+        self.uslugi = []  # usługi WFS z warstwami wybranego zbioru (wynik wfs.dostepne_uslugi)
+        self.warstwy_wfs = []  # (nazwa, tytuł) warstw wybranej usługi
+        self.adres_wfs = None  # adres wybranej usługi WFS
 
         okno.title("GeoSteam")
         okno.geometry("1000x920")
@@ -60,10 +62,15 @@ class Aplikacja:
         wiersz = ttk.Frame(ramka)
         wiersz.pack(fill="x")
         self.rodzaj = tk.StringVar(value="wszystkie")
+        self.temat = tk.StringVar(value=WSZYSTKIE_TEMATY)
         self.teryt = tk.StringVar()
         self.nazwa_zbioru = tk.StringVar()
         ttk.Label(wiersz, text="Rodzaj:").pack(side="left")
         ttk.Combobox(wiersz, textvariable=self.rodzaj, values=RODZAJE, state="readonly", width=12).pack(side="left", padx=(4, 12))
+        ttk.Label(wiersz, text="Temat:").pack(side="left")
+        ttk.Combobox(
+            wiersz, textvariable=self.temat, values=[WSZYSTKIE_TEMATY, *ETYKIETY_TEMATOW], state="readonly", width=28
+        ).pack(side="left", padx=(4, 12))
         ttk.Label(wiersz, text="TERYT:").pack(side="left")
         ttk.Entry(wiersz, textvariable=self.teryt, width=10).pack(side="left", padx=(4, 12))
         ttk.Label(wiersz, text="Nazwa zbioru:").pack(side="left")
@@ -75,15 +82,15 @@ class Aplikacja:
         self.tabela_zbiorow.bind("<<TreeviewSelect>>", self._wybrano_zbior)
 
     def _sekcja_uslug(self, rodzic):
-        ramka = ttk.LabelFrame(rodzic, text="2. Usługi pobierania zbioru i warstwy WFS", padding=6)
+        ramka = ttk.LabelFrame(rodzic, text="2. Usługi WFS zbioru z warstwami do pobrania", padding=6)
         ramka.pack(fill="both", expand=True, pady=(0, 6))
         lewa = ttk.Frame(ramka)
         lewa.pack(side="left", fill="both", expand=True, padx=(0, 6))
         prawa = ttk.Frame(ramka)
         prawa.pack(side="left", fill="both", expand=True)
-        ttk.Label(lewa, text="Usługi pobierania (WFS jest obsługiwany):").pack(anchor="w")
+        ttk.Label(lewa, text="Usługi (tylko z dostępnymi warstwami):").pack(anchor="w")
         self.lista_uslug = self._lista(lewa, wysokosc=5, tryb="browse")
-        ttk.Button(lewa, text="Pokaż warstwy WFS", command=self._pokaz_warstwy).pack(anchor="w", pady=4)
+        self.lista_uslug.bind("<<ListboxSelect>>", self._wybrano_usluge)
         ttk.Label(prawa, text="Warstwy usługi (bez zaznaczenia - wszystkie):").pack(anchor="w")
         self.lista_warstw = self._lista(prawa, wysokosc=5, tryb="extended")
         ttk.Button(prawa, text="Dodaj do listy źródeł", command=self._dodaj_zrodlo).pack(anchor="w", pady=4)
@@ -124,18 +131,28 @@ class Aplikacja:
         harm = ttk.LabelFrame(rodzic, text="Cykliczne pobieranie i aktualizacja", padding=6)
         harm.pack(fill="x")
         self.harm_wlaczony = tk.BooleanVar()
-        self.harm_godziny = tk.StringVar()
+        self.harm_czeste = tk.BooleanVar()
+        self.harm_wartosc = tk.StringVar()
         ttk.Checkbutton(
-            harm, text="Aktualizuj automatycznie co określony czas (działa, gdy GeoSteam jest uruchomiony)",
-            variable=self.harm_wlaczony,
+            harm, text="Aktualizuj automatycznie (działa, gdy GeoSteam jest uruchomiony)", variable=self.harm_wlaczony,
         ).pack(anchor="w")
-        wiersz_godzin = ttk.Frame(harm)
-        wiersz_godzin.pack(fill="x", pady=4)
-        ttk.Label(wiersz_godzin, text="Co ile godzin:").pack(side="left")
-        ttk.Spinbox(wiersz_godzin, from_=1, to=720, textvariable=self.harm_godziny, width=6).pack(side="left", padx=4)
-        ttk.Button(wiersz_godzin, text="Zapisz ustawienia", command=self._zapisz_harmonogram).pack(side="left", padx=4)
+        ttk.Checkbutton(
+            harm, text="Zezwól na aktualizację częstszą niż co godzinę (w minutach)",
+            variable=self.harm_czeste, command=self._zmien_tryb_interwalu,
+        ).pack(anchor="w")
+        wiersz_interwalu = ttk.Frame(harm)
+        wiersz_interwalu.pack(fill="x", pady=4)
+        ttk.Label(wiersz_interwalu, text="Co:").pack(side="left")
+        self.spinbox_interwalu = ttk.Spinbox(wiersz_interwalu, textvariable=self.harm_wartosc, width=6)
+        self.spinbox_interwalu.pack(side="left", padx=4)
+        self.etykieta_jednostki = ttk.Label(wiersz_interwalu, text="godzin")
+        self.etykieta_jednostki.pack(side="left")
+        ttk.Button(wiersz_interwalu, text="Zapisz ustawienia", command=self._zapisz_harmonogram).pack(side="left", padx=8)
         self.etykieta_harmonogramu = ttk.Label(harm, text="")
         self.etykieta_harmonogramu.pack(anchor="w")
+        ttk.Label(
+            harm, text="Uwaga: częste aktualizacje obciążają serwery usług. Ustaw interwał rzędu kilku godzin, jeśli to możliwe."
+        ).pack(anchor="w")
         ttk.Label(
             harm, text="Bez okna: Harmonogram zadań Windows z poleceniem GeoSteam.exe --aktualizuj (w folderze programu)."
         ).pack(anchor="w", pady=(6, 0))
@@ -228,8 +245,9 @@ class Aplikacja:
 
     def _szukaj(self):
         rodzaj = "" if self.rodzaj.get() == "wszystkie" else self.rodzaj.get()
+        temat = ETYKIETY_TEMATOW.get(self.temat.get(), "")
         teryt, nazwa = self.teryt.get().strip(), self.nazwa_zbioru.get().strip()
-        self._uruchom(lambda: eziudp.szukaj_zbiorow(rodzaj, teryt, nazwa), self._pokaz_zbiory)
+        self._uruchom(lambda: eziudp.szukaj_zbiorow(rodzaj, teryt, nazwa, temat), self._pokaz_zbiory)
 
     def _pokaz_zbiory(self, zbiory):
         self.zbiory = zbiory
@@ -243,34 +261,33 @@ class Aplikacja:
         if not zaznaczone:
             return
         self.wybrany_zbior = self.zbiory[int(zaznaczone[0])]
-        self.uslugi = [eziudp.oczysc_adres(adres) for adres in self.wybrany_zbior["uslugi"]["pobierania"]]
-        self.lista_uslug.delete(0, "end")
-        for adres in self.uslugi:
-            oznaczenie = "[WFS]" if eziudp.czy_wfs(adres) else "[inna usługa]"
-            self.lista_uslug.insert("end", f"{oznaczenie} {adres}")
-        self.lista_warstw.delete(0, "end")
+        self.uslugi = []
         self.warstwy_wfs = []
         self.adres_wfs = None
+        self.lista_uslug.delete(0, "end")
+        self.lista_warstw.delete(0, "end")
+        adresy = [eziudp.oczysc_adres(a) for a in self.wybrany_zbior["uslugi"]["pobierania"]]
+        self._dopisz(f"Sprawdzam usługi zbioru ({len(adresy)})...")
+        self._uruchom(lambda: wfs.dostepne_uslugi(adresy, self._log_z_watku), self._pokaz_uslugi)
 
-    def _pokaz_warstwy(self):
+    def _pokaz_uslugi(self, uslugi):
+        self.uslugi = uslugi
+        self.lista_uslug.delete(0, "end")
+        for usluga in uslugi:
+            self.lista_uslug.insert("end", f"{usluga['adres']}  [{len(usluga['warstwy'])} warstw, WFS {usluga['wersja']}]")
+        if not uslugi:
+            self._dopisz("Ten zbiór nie ma usług WFS z warstwami do pobrania.")
+
+    def _wybrano_usluge(self, _zdarzenie):
         wybrane = self.lista_uslug.curselection()
         if not wybrane:
-            messagebox.showinfo("Pobieranie", "Wybierz usługę z listy.")
             return
-        adres = self.uslugi[wybrane[0]]
-        if not eziudp.czy_wfs(adres):
-            messagebox.showinfo("Pobieranie", "Ta aplikacja obsługuje tylko usługi WFS.")
-            return
-
-        def po_zakonczeniu(wynik):
-            _wersja, self.warstwy_wfs = wynik
-            self.adres_wfs = adres
-            self.lista_warstw.delete(0, "end")
-            for nazwa, tytul in self.warstwy_wfs:
-                self.lista_warstw.insert("end", f"{nazwa}  ({tytul})")
-            self._dopisz(f"Warstw w usłudze: {len(self.warstwy_wfs)}")
-
-        self._uruchom(lambda: wfs.pobierz_capabilities(adres, self._log_z_watku), po_zakonczeniu)
+        usluga = self.uslugi[wybrane[0]]
+        self.adres_wfs = usluga["adres"]
+        self.warstwy_wfs = usluga["warstwy"]
+        self.lista_warstw.delete(0, "end")
+        for nazwa, tytul in self.warstwy_wfs:
+            self.lista_warstw.insert("end", f"{nazwa}  ({tytul})")
 
     def _dodaj_zrodlo(self):
         if self.wybrany_zbior is None or self.adres_wfs is None:
@@ -372,7 +389,10 @@ class Aplikacja:
         self.etykieta_scenariusza.configure(text=f"Aktywny scenariusz: {aktywny or 'brak (lista z zrodla.json)'}")
         h = self.ustawienia["harmonogram"]
         self.harm_wlaczony.set(h["wlaczony"])
-        self.harm_godziny.set(str(h["co_godzin"]))
+        czeste = h["co_minut"] < 60
+        self.harm_czeste.set(czeste)
+        self._ustaw_tryb_interwalu(czeste)
+        self.harm_wartosc.set(str(h["co_minut"] if czeste else h["co_minut"] // 60))
         self._odswiez_harmonogram_etykiete()
 
     def _wczytaj_wybrany(self):
@@ -441,13 +461,28 @@ class Aplikacja:
             tekst = f"Ostatnia automatyczna aktualizacja: {_format_czasu(h['ostatnie_uruchomienie'])} | następna: {nastepne_tekst}"
         self.etykieta_harmonogramu.configure(text=tekst)
 
+    def _ustaw_tryb_interwalu(self, czeste):
+        if czeste:
+            self.spinbox_interwalu.configure(from_=1, to=59)
+            self.etykieta_jednostki.configure(text="minut")
+        else:
+            self.spinbox_interwalu.configure(from_=1, to=720)
+            self.etykieta_jednostki.configure(text="godzin")
+
+    def _zmien_tryb_interwalu(self):
+        czeste = self.harm_czeste.get()
+        self._ustaw_tryb_interwalu(czeste)
+        self.harm_wartosc.set("15" if czeste else "24")
+
     def _zapisz_harmonogram(self):
+        czeste = self.harm_czeste.get()
+        najwieksza = 59 if czeste else 720
         try:
-            godziny = int(self.harm_godziny.get())
+            wartosc = int(self.harm_wartosc.get())
         except ValueError:
-            godziny = 0
-        if not 1 <= godziny <= 720:
-            messagebox.showerror("Ustawienia", "Podaj liczbę godzin od 1 do 720.")
+            wartosc = 0
+        if not 1 <= wartosc <= najwieksza:
+            messagebox.showerror("Ustawienia", f"Podaj liczbę od 1 do {najwieksza} {'minut' if czeste else 'godzin'}.")
             return
         h = self.ustawienia["harmonogram"]
         wlaczony = self.harm_wlaczony.get()
@@ -455,10 +490,10 @@ class Aplikacja:
             # po włączeniu pierwsza automatyczna aktualizacja dopiero po pełnym odstępie
             h["ostatnie_uruchomienie"] = datetime.datetime.now().isoformat(timespec="minutes")
         h["wlaczony"] = wlaczony
-        h["co_godzin"] = godziny
+        h["co_minut"] = wartosc if czeste else wartosc * 60
         magazyn.zapisz_ustawienia(self.ustawienia)
         self._odswiez_harmonogram_etykiete()
-        stan = f"włączony, co {godziny} h" if wlaczony else "wyłączony"
+        stan = f"włączony, co {wartosc} {'min' if czeste else 'h'}" if wlaczony else "wyłączony"
         self._dopisz(f"Zapisano harmonogram: {stan}")
 
     def _sprawdz_harmonogram(self):

@@ -7,7 +7,7 @@ def nastepne_uruchomienie(harmonogram):
     if not harmonogram["wlaczony"] or harmonogram["ostatnie_uruchomienie"] is None:
         return None
     ostatnie = datetime.datetime.fromisoformat(harmonogram["ostatnie_uruchomienie"])
-    return ostatnie + datetime.timedelta(hours=harmonogram["co_godzin"])
+    return ostatnie + datetime.timedelta(minutes=harmonogram["co_minut"])
 
 
 def czy_pora(harmonogram, teraz):

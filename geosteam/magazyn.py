@@ -23,7 +23,7 @@ KATALOG_RAPORTOW = os.path.join(KATALOG_APLIKACJI, "raporty")
 
 DOMYSLNE_USTAWIENIA = {
     "aktywny_scenariusz": None,
-    "harmonogram": {"wlaczony": False, "co_godzin": 24, "ostatnie_uruchomienie": None},
+    "harmonogram": {"wlaczony": False, "co_minut": 1440, "ostatnie_uruchomienie": None},
 }
 
 
@@ -46,6 +46,9 @@ def wczytaj_ustawienia():
         with open(PLIK_USTAWIEN, encoding="utf-8") as plik:
             zapisane = json.load(plik)
         harmonogram = zapisane.pop("harmonogram", {})
+        if "co_godzin" in harmonogram:  # wersja starsza niż ustawienia w minutach
+            harmonogram.setdefault("co_minut", harmonogram.pop("co_godzin") * 60)
+            harmonogram.pop("co_godzin", None)
         ustawienia.update(zapisane)
         ustawienia["harmonogram"].update(harmonogram)
     return ustawienia
