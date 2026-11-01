@@ -27,19 +27,20 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt pyinstaller
 
-      - name: Budowanie Pobieracz.exe
+      - name: Budowanie GeoSteam (folder z GeoSteam.exe)
         run: >
-          python -m PyInstaller --noconfirm --clean --onefile --windowed --name Pobieracz
+          python -m PyInstaller --noconfirm --clean --onedir --windowed --name GeoSteam
           --add-data "zrodla.json;." --collect-all pyogrio --collect-all pyproj
           --hidden-import pobieracz.gui pobieracz_start.py
 
-      - name: Test dymny exe (aktualizacja jednej warstwy PRG)
+      - name: Test dymny (aktualizacja jednej warstwy PRG)
         shell: pwsh
         timeout-minutes: 20
         run: |
-          $test = Join-Path $env:RUNNER_TEMP "pobieracz-test"
+          $test = Join-Path $env:RUNNER_TEMP "geosteam-test"
           New-Item -ItemType Directory -Force -Path $test | Out-Null
-          Copy-Item dist\Pobieracz.exe $test
+          Copy-Item dist\GeoSteam $test -Recurse
+          $app = Join-Path $test "GeoSteam"
 
           @'
           {
@@ -55,13 +56,14 @@ jobs:
               }
             ]
           }
-          '@ | Set-Content -Path (Join-Path $test "zrodla.json") -Encoding utf8NoBOM
+          '@ | Set-Content -Path (Join-Path $app "zrodla.json") -Encoding utf8NoBOM
 
-          $proces = Start-Process -FilePath (Join-Path $test "Pobieracz.exe") -ArgumentList "--aktualizuj" `
-            -WorkingDirectory $test -Wait -PassThru
-          if ($proces.ExitCode -ne 0) { throw "Pobieracz.exe zakonczyl sie kodem $($proces.ExitCode)" }
+          $proces = Start-Process -FilePath (Join-Path $app "GeoSteam.exe") -ArgumentList "--aktualizuj" `
+            -WorkingDirectory $app -Wait -PassThru
+          if ($proces.ExitCode -ne 0) { throw "GeoSteam.exe zakonczyl sie kodem $($proces.ExitCode)" }
+          if (Test-Path (Join-Path $app "blad.txt")) { throw "GeoSteam.exe zapisal blad.txt" }
 
-          $gpkg = Join-Path $test "dane\PRG_test.gpkg"
+          $gpkg = Join-Path $app "dane\PRG_test.gpkg"
           if (-not (Test-Path $gpkg)) { throw "Brak pliku GeoPackage: $gpkg" }
 
           python -c "import sys, pyogrio; i = pyogrio.read_info(sys.argv[1], layer='A01_Granice_wojewodztw'); assert i['features'] == 16, i['features']; assert str(i['crs']) == 'EPSG:2180', i['crs']; print('OK', i['features'], i['crs'])" $gpkg
@@ -69,6 +71,6 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Pobieracz-windows
-          path: dist/Pobieracz.exe
+          name: GeoSteam-windows
+          path: dist/GeoSteam
           if-no-files-found: error

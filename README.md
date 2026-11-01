@@ -12,20 +12,21 @@ EZiUDP (GUGiK). Warstwy zapisywane są w plikach GeoPackage (`.gpkg`).
 
 ## Wersja .exe (bez instalacji Pythona)
 
-Program można spakować do jednego pliku `Pobieracz.exe`, który działa na Windows bez zainstalowanego Pythona.
+Program można spakować do folderu `GeoSteam\` z plikiem `GeoSteam.exe`, który działa na Windows bez zainstalowanego Pythona.
 
-1. Na dowolnym Windowsie z Pythonem 3.12+ uruchom `build_exe.bat` (raz). Powstanie `dist\Pobieracz.exe`.
-2. Skopiuj sam plik `Pobieracz.exe` na docelowy komputer, np. do `C:\GIS\`.
+1. Na dowolnym Windowsie z Pythonem 3.12+ uruchom `build_exe.bat` (raz). Powstanie `dist\GeoSteam\`.
+2. Skopiuj cały folder `GeoSteam\` na docelowy komputer, np. do `C:\GeoSteam\`.
    Nie umieszczaj go w `Program Files` - program zapisuje pliki obok siebie.
-3. Przy pierwszym uruchomieniu obok exe powstaną `zrodla.json` (domyślna lista źródeł), `dane\` i `raporty\`.
+3. Uruchom `GeoSteam.exe`. Przy pierwszym uruchomieniu obok exe powstaną `zrodla.json` (domyślna lista źródeł), `dane\` i `raporty\`.
 
-Aktualizacja w tle, np. w Harmonogramie zadań: program `Pobieracz.exe` z argumentem `--aktualizuj`
-(zadanie uruchom w folderze exe). Wynik zapisuje się w `raporty\`.
+Aktualizacja w tle, np. w Harmonogramie zadań: program `GeoSteam.exe` z argumentem `--aktualizuj`
+(zadanie uruchom w folderze `GeoSteam\`). Wynik zapisuje się w `raporty\`.
 
 Uwagi:
 - Program nie ma okna konsoli, więc błędy z `--aktualizuj` widać w raporcie w `raporty\`.
+- Jeśli program nie wystartuje, obok `GeoSteam.exe` pojawi się plik `blad.txt` z treścią błędu.
 - Antywirus (np. Defender) może zgłaszać pliki spakowane PyInstallerem jako podejrzane. To znany problem tego narzędzia.
-  Wtedy trzeba dodać wyjątek dla pliku exe.
+  Wtedy trzeba dodać wyjątek dla folderu `GeoSteam\`.
 
 ## Obsługa
 
